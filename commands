@@ -65,7 +65,7 @@ case "$1" in
     # Link to a potential existing app
     dokku postgresql:link $APP $APP
     echo
-    echo "-----> PostgreSQL container created: $CONTAINER_NAME (using $CONTAINER_IMAGE)"
+    echo "-----> PostgreSQL container $CONTAINER_NAME created (using $CONTAINER_IMAGE)"
     sleep 1
     dokku postgresql:info $APP
     ;;
@@ -74,12 +74,12 @@ case "$1" in
     ID=$(docker ps -a | grep "$CONTAINER_NAME" |  awk '{print $1}')
     if [[ ! -z "$ID" ]]; then
         echo
-        echo "-----> Stopping container: $CONTAINER_NAME"
+        echo "-----> Stopping $CONTAINER_NAME container"
         docker stop $ID > /dev/null
     fi
     docker rm $ID > /dev/null
     echo
-    echo "-----> PostgreSQL container removed: $CONTAINER_NAME"
+    echo "-----> $CONTAINER_NAME container removed"
     dokku postgresql:create $APP
     ;;
 
@@ -129,9 +129,11 @@ case "$1" in
         # Remove persistent volume
         if [[ -d "$HOST_DIR" ]]; then
             rm -rf "$HOST_DIR"
+            echo
+            echo "-----> Deleted persistent storage for $CONTAINER_NAME"
         fi
         echo
-        echo "-----> PostgreSQL container deleted: $CONTAINER_NAME"
+        echo "-----> Deleted PostgreSQl container $CONTAINER_NAME"
     fi
     ;;
 
@@ -185,14 +187,15 @@ case "$1" in
 
   help)
     cat && cat<<EOF
-    postgresql:create <app>           Create a PostgreSQL container for <app>
-    postgresql:clone <app> <trg>      Clone PostgreSQL container of <app> for <trg>
-    postgresql:rebuild <app>          Rebuil PostgreSQL container of <app> (keep persistend data)
-    postgresql:delete <app>           Delete specified PostgreSQL container for <app>
-    postgresql:info <app>             Display <app> PostgreSQL container informations
-    postgresql:link <app> <pgsql>     Link an app to a PostgreSQL container
-    postgresql:list                   Display list of PostgreSQL containers
-    postgresql:logs <app>             Display last logs from <app> PostgreSQL container
+    redis:create <app>                              Create a Redis container
+    postgresql:create <app>                         Create a PostgreSQL container for <app>
+    postgresql:clone <app> <trg>                    Clone PostgreSQL container of <app> for <trg>
+    postgresql:rebuild <app>                        Rebuil PostgreSQL container of <app> (keep persistend data)
+    postgresql:delete <app>                         Delete specified PostgreSQL container for <app>
+    postgresql:info <app>                           Display <app> PostgreSQL container informations
+    postgresql:link <app> <pgsql>                   Link an app to a PostgreSQL container
+    postgresql:list                                 Display list of PostgreSQL containers
+    postgresql:logs <app>                           Display last logs from <app> PostgreSQL container
 EOF
     ;;
 

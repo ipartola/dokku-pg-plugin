@@ -30,7 +30,7 @@ fi
 case "$1" in
 
   postgresql:create)
-    # Check if Rabbitmq container is installed
+    # Check if Postgresql image is installed
     IMAGE=$(docker images | grep "$CONTAINER_IMAGE" |  awk '{print $3}')
     if [[ -z $IMAGE ]]; then
         echo "PostgreSQL image not found... Did you run 'dokku plugins-install' ?"
@@ -158,12 +158,11 @@ case "$1" in
             echo "Postgresql is not correctly initialized"
             exit 0
         fi
-        ID=$(docker ps -a | grep "$CONTAINER_NAME" |  awk '{print $1}')
+        #ID=$(docker ps -a | grep "$CONTAINER_NAME" |  awk '{print $1}')
         #IP=$(docker inspect $ID | grep IPAddress | awk '{ print $2 }' | tr -d ',"')
         DB_PASSWORD=$(cat "$HOST_DIR/pwd")
 
         dokku link:create "$APP" "$CONTAINER_NAME" "$PLUGIN_ALIAS"
-        # Write BROKER_URL to app's ENV file using dokku command
         dokku config:set $APP "DB_SCHEME=postgresql" "DB_USERNAME=root" "DB_PASSWORD=$DB_PASSWORD" "DB_PATH=/db"
         echo
         echo "-----> $APP linked to $CONTAINER_NAME container"

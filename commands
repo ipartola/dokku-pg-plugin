@@ -68,6 +68,17 @@ case "$1" in
     dokku postgresql:info $APP
     ;;
   
+  postgresql:rebuild)
+    ID=$(docker ps | grep "$CONTAINER_NAME" |  awk '{print $1}')
+    if [[ ! -z "$ID" ]]; then
+        docker stop $ID > /dev/null
+    fi
+    docker rm $ID > /dev/null
+    echo
+    echo "-----> PostgreSQL container removed: $CONTAINER_NAME"
+    dokku postgresql:create $APP
+    ;;
+
   postgresql:clone)
     if $APP_EXISTS; then
         # Check argument
@@ -80,12 +91,14 @@ case "$1" in
             echo "Persistent storage for ${PLUGIN_NAME}_$3 already exists"
             exit 1
         fi
+        # Create new container with copied storage
+        dokku postgresql:create $3 > /dev/null
         echo
         echo "-----> Cloning $PLUGIN_NAME/$APP storage"
-        cp -r "$HOST_DIR" "$TARGET_DIR"
-
-        # Create new container with copied storage
-        dokku postgresql:create $3
+        cp -rf "$HOST_DIR" "$TARGET_DIR"
+        dokku postgresql:rebuild > /dev/null
+        echo
+        echo "-----> $PLUGIN_NAME/$APP storage cloned to $3"
     fi
     ;;
 

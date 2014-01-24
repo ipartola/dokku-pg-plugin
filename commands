@@ -73,6 +73,8 @@ case "$1" in
   postgresql:rebuild)
     ID=$(docker ps -a | grep "$CONTAINER_NAME" |  awk '{print $1}')
     if [[ ! -z "$ID" ]]; then
+        echo
+        echo "-----> Stopping container: $CONTAINER_NAME"
         docker stop $ID > /dev/null
     fi
     docker rm $ID > /dev/null

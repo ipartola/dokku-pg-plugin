@@ -167,7 +167,7 @@ case "$1" in
     postgresql:clone <app> <trg>      Clone PostgreSQL container of <app> for <trg>
     postgresql:delete <app>           Delete specified PostgreSQL container for <app>
     postgresql:info <app>             Display <app> PostgreSQL container informations
-    postgresql:link <app> <rabbit>    Link an app to a PostgreSQL container
+    postgresql:link <app> <pgsql>     Link an app to a PostgreSQL container
     postgresql:list                   Display list of PostgreSQL containers
     postgresql:logs <app>             Display last logs from <app> PostgreSQL container
 EOF

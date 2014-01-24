@@ -56,7 +56,6 @@ case "$1" in
     # Generate random password for users
     DB_PASSWORD=$(< /dev/urandom tr -dc A-Za-z0-9 | head -c 16)
     echo $DB_PASSWORD > "$HOST_DIR/pwd"
-    chown -R dokku:dokku "$HOST_DIR"
     chmod 600 "$HOST_DIR/pwd"
     VOLUME="$HOST_DIR/volume:/opt/postgresql"
     # Launch container

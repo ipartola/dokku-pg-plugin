@@ -7,14 +7,13 @@ Project: https://github.com/progrium/dokku
 
 Requirements
 ------------
-* Docker version `0.7.2` or higher
-* Dokku version `0.2.1` or higher
+* dokku-link plugin: https://github.com/rlaneve/dokku-link
 
 Installation
 ------------
 ```
 cd /var/lib/dokku/plugins
-git clone https://github.com/Kloadut/dokku-pg-plugin postgresql
+git clone https://github.com/jlachowski/dokku-pg-plugin postgresql
 dokku plugins-install
 ```
 
@@ -23,12 +22,13 @@ Commands
 --------
 ```
 $ dokku help
-     postgresql:create <app>     Create a PostgreSQL container
-     postgresql:delete <app>     Delete specified PostgreSQL container
-     postgresql:info <app>       Display database informations
-     postgresql:link <app> <db>  Link an app to a PostgreSQL database
-     postgresql:list             Display list of PostgreSQL containers
-     postgresql:logs <app>       Display last logs from PostgreSQL contain
+     postgresql:create <app>      Create a PostgreSQL container
+     postgresql:clone <app> <trg> Clone PostgreSQL container of <app> for <trg>
+     postgresql:delete <app>      Delete specified PostgreSQL container
+     postgresql:info <app>        Display database informations
+     postgresql:link <app> <db>   Link an app to a PostgreSQL database
+     postgresql:list              Display list of PostgreSQL containers
+     postgresql:logs <app>        Display last logs from PostgreSQL contain
 ```
 
 Simple usage
@@ -39,13 +39,6 @@ Create a new DB:
 $ dokku postgresql:create foo            # Server side
 $ ssh dokku@server postgresql:create foo # Client side
 
------> PostgreSQL container created: postgresql/foo
-
-       Host: 172.17.42.1
-       User: 'root'
-       Password: 'RDSBYlUrOYMtndKb'
-       Database: 'db'
-       Public port: 49187
 ```
 
 Deploy your app with the same name (client side):

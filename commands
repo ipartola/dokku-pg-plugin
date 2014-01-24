@@ -15,109 +15,112 @@ if [[ $1 == postgresql:* ]]; then
             APP_EXISTS=false
         fi
     fi
-fi
-
-# Create .postgresql diretory of not exists
-if [[ ! -d $DOKKU_ROOT/.postgresql ]]; then
-    mkdir -p $DOKKU_ROOT/.postgresql
-    chown -R dokku: $DOKKU_ROOT/.postgresql
+    if [[ ! -d "$PLUGIN_PATH/link" ]]; then
+        echo "Link plugin not found... Did you install it from https://github.com/rlaneve/dokku-link?"
+        exit 1
+    fi
+    PLUGIN_NAME="postgresql"
+    PLUGIN_ALIAS="db"
+    CONTAINER_NAME="${PLUGIN_NAME}_${APP}"
+    HOST_DIR="$DOKKU_ROOT/.$PLUGIN_NAME/$APP"
+    CONTAINER_IMAGE="jlachowski/postgresql"
+    DB_PORT=5432
 fi
 
 case "$1" in
 
   postgresql:create)
-    DB_IMAGE=postgresql/$APP
-    # Check if DB container is installed
-    IMAGE=$(docker images | grep "kloadut/postgresql " |  awk '{print $3}')
+    # Check if Rabbitmq container is installed
+    IMAGE=$(docker images | grep "$CONTAINER_IMAGE" |  awk '{print $3}')
     if [[ -z $IMAGE ]]; then
         echo "PostgreSQL image not found... Did you run 'dokku plugins-install' ?"
         exit 1
     fi
-    # Check if an existing DB volume exists
-    if [[ -f "$DOKKU_ROOT/.postgresql/volume_$APP" ]]; then
-        VOLUME="`cat $DOKKU_ROOT/.postgresql/volume_$APP`:/opt/postgresql"
+    if [[ ! -d "$HOST_DIR" ]]; then
+        mkdir -p "$HOST_DIR"
+    fi
+    # Check if an existing storage volume exists
+    if [[ -d "$HOST_DIR/volume" ]]; then
         echo
-        echo "-----> Reusing postgresql/$APP database"
+        echo "-----> Reusing $PLUGIN_NAME/$APP storage"
     else
-        VOLUME="/opt/postgresql"
-        # Generate a random password for DB user
+        mkdir -p "$HOST_DIR/volume"
+        # Generate random password for users
         DB_PASSWORD=$(< /dev/urandom tr -dc A-Za-z0-9 | head -c 16)
-        echo $DB_PASSWORD > "$DOKKU_ROOT/.postgresql/pwd_$APP"
-        chown dokku: "$DOKKU_ROOT/.postgresql/pwd_$APP"
-        chmod 700 "$DOKKU_ROOT/.postgresql/pwd_$APP"
+        echo $DB_PASSWORD > "$HOST_DIR/pwd-$APP"
+        chown -R dokku:dokku "$HOST_DIR"
+        chmod 700 "$HOST_DIR/pwd-$APP"
     fi
-    # Fork DB image
-    ID=$(docker run -d kloadut/postgresql exit 0)
-    docker wait $ID > /dev/null
-    IMAGE=$(docker commit $ID)
-    docker tag $IMAGE $DB_IMAGE
+    VOLUME="$HOST_DIR/volume:/opt/postgresql"
+    # Stop existing container with the same persistent Rabbitmq
+    ID=$(docker ps | grep "$CONTAINER_NAME" |  awk '{print $1}')
+    if [[ ! -z "$ID" ]]; then
+        docker stop $ID > /dev/null
+    fi
     # Launch container
-    ID=$(docker run -v $VOLUME -p 5432 -d $DB_IMAGE /usr/bin/start_pgsql.sh $DB_PASSWORD)
-    sleep 4
-    # Rename persistent volume
-    if [[ ! -f "$DOKKU_ROOT/.postgresql/volume_$APP" ]]; then
-        VOLUME_PATH=$(docker inspect $ID | grep /var/lib/docker/vfs/dir/ | awk '{print $2}' | sed -e's/"//g')
-        if [[ -z $VOLUME_PATH ]]; then
-            echo "Your docker version is too old, please update it"
-            exit 1
-        fi
-        echo $VOLUME_PATH > "$DOKKU_ROOT/.postgresql/volume_$APP"
-    fi
-    # Write port for further usage
-    PORT=$(docker port $ID 5432 | sed 's/0.0.0.0://')
-    echo $PORT > "$DOKKU_ROOT/.postgresql/port_$APP"
+    ID=$(docker run -v $VOLUME -name=$CONTAINER_NAME -d $CONTAINER_IMAGE /usr/bin/start-pgsql.sh $DB_PASSWORD)
+    sleep 1
     # Link to a potential existing app
     dokku postgresql:link $APP $APP
     echo
-    echo "-----> PostgreSQL container created: $DB_IMAGE"
+    echo "-----> PostgreSQL container created: $CONTAINER_NAME (using $CONTAINER_IMAGE)"
     sleep 1
     dokku postgresql:info $APP
     ;;
+  
+  postgresql:clone)
+    if $APP_EXISTS; then
+        # Check argument
+        if [[ -z $3 ]]; then
+            echo "You must specify a name for the clone"
+            exit 1
+        fi
+        TARGET_DIR="$DOKKU_ROOT/.$PLUGIN_NAME/$3"
+        if [[ -d "$TARGET_DIR" ]]; then
+            echo "Persistent storage for ${PLUGIN_NAME}_$3 already exists"
+            exit 1
+        fi
+        echo
+        echo "-----> Cloning $PLUGIN_NAME/$APP storage"
+        cp -r "$HOST_DIR" "$TARGET_DIR"
+
+        # Create new container with copied storage
+        dokku postgresql:create $3
+    fi
+    ;;
 
   postgresql:delete)
-    DB_IMAGE=postgresql/$APP
-    ID=$(docker ps -a | grep "$DB_IMAGE":latest |  awk '{print $1}')
-    # Stop the container
-    if [[ ! -z $ID ]]; then
-        docker kill $ID > /dev/null
-        sleep 1
-        docker rm $ID > /dev/null
-        sleep 1
-    fi
-    # Remove image
-    IMAGE=$(docker images | grep "$DB_IMAGE " |  awk '{print $1}')
-    if [[ ! -z $IMAGE ]]; then
-        docker rmi $IMAGE > /dev/null
-    fi
-    # Remove container port storage
-    if [[ -f "$DOKKU_ROOT/.postgresql/port_$APP" ]]; then
-        rm -f "$DOKKU_ROOT/.postgresql/port_$APP"
-    fi
-    # Remove container root password
-    if [[ -f "$DOKKU_ROOT/.postgresql/pwd_$APP" ]]; then
-        rm -f "$DOKKU_ROOT/.postgresql/pwd_$APP"
-    fi
-    # Remove persistent volume
-    if [[ -f "$DOKKU_ROOT/.postgresql/volume_$APP" ]]; then
-        rm -rf $(cat $DOKKU_ROOT/.postgresql/volume_$APP)
-        rm -f "$DOKKU_ROOT/.postgresql/volume_$APP"
-    fi
     echo
-    echo "-----> PostgreSQL container deleted: $DB_IMAGE"
+    echo "-----> This will permanently remove all the stored data. Are you sure (yes/no)?"
+    read ANSWER
+    if [[ $ANSWER == "yes" ]]; then
+        # Stop the container
+        ID=$(docker ps -a | grep "$CONTAINER_NAME" |  awk '{print $1}')
+        if [[ ! -z $ID ]]; then
+            docker stop $ID > /dev/null
+            docker rm $ID > /dev/null
+        fi
+
+        dokku link:delete "$APP" "$CONTAINER_NAME" "$PLUGIN_ALIAS"
+        dokku config:unset "$APP" "DB_SCHEME" "DB_USERNAME" "DB_PASSWORD" "DB_PATH"
+
+        # Remove persistent volume
+        if [[ -d "$HOST_DIR" ]]; then
+            rm -rf "$HOST_DIR"
+        fi
+        echo
+        echo "-----> PostgreSQL container deleted: $CONTAINER_NAME"
+    fi
     ;;
 
   postgresql:info)
-    DB_IMAGE=postgresql/$APP
-    if [[ ! -f "$DOKKU_ROOT/.postgresql/pwd_$APP" ]]; then
-        echo "Unknown (or too old) PostgreSQL container"
-        exit 1
-    fi
+    ID=$(docker ps -a | grep "$CONTAINER_NAME" |  awk '{print $1}')
+    IP=$(docker inspect $ID | grep IPAddress | awk '{ print $2 }' | tr -d ',"')
+    DOCKER_GATEWAY=$(docker inspect $ID | grep Gateway | awk '{ print $2 }' | tr -d ',"')
     echo
-    echo "       Host: 172.17.42.1"
-    echo "       Port: $(cat "$DOKKU_ROOT/.postgresql/port_$APP")"
-    echo "       User: 'root'"
-    echo "       Password: '$(cat "$DOKKU_ROOT/.postgresql/pwd_$APP")'"
-    echo "       Database: 'db'"
+    echo "       Host: $IP"
+    echo "       Gateway: $DOCKER_GATEWAY"
+    echo "       Secret port: $DB_PORT"
     echo
     ;;
 
@@ -125,31 +128,33 @@ case "$1" in
     if $APP_EXISTS; then
         # Check argument
         if [[ -z $3 ]]; then
-            echo "You must specify a database name"
+            echo "You must specify a container name"
             exit 1
         fi
-        DB_IMAGE="postgresql/$3"
-    	if [[ ! -f "$DOKKU_ROOT/.postgresql/pwd_$APP" ]]; then
-            echo "Database is not initialized correctly"
+        CONTAINER_NAME="${PLUGIN_NAME}_$3"
+        if [[ ! -f "$HOST_DIR/pwd-$3" ]]; then
+            echo "Postgresql is not correctly initialized"
             exit 0
         fi
-        DB_PASSWORD=$(cat "$DOKKU_ROOT/.postgresql/pwd_$APP")
-        PORT=$(cat "$DOKKU_ROOT/.postgresql/port_$APP")
-        # Link database using dokku command
-        dokku config:set $APP "DATABASE_URL=postgres://root:$DB_PASSWORD@172.17.42.1:$PORT/db"
+        ID=$(docker ps -a | grep "$CONTAINER_NAME" |  awk '{print $1}')
+        #IP=$(docker inspect $ID | grep IPAddress | awk '{ print $2 }' | tr -d ',"')
+        DB_PASSWORD=$(cat "$HOST_DIR/pwd-$3")
+
+        dokku link:create "$APP" "$CONTAINER_NAME" "$PLUGIN_ALIAS"
+        # Write BROKER_URL to app's ENV file using dokku command
+        dokku config:set $APP "DB_SCHEME=postgresql" "DB_USERNAME=root" "DB_PASSWORD=$DB_PASSWORD" "DB_PATH=/db"
         echo
-        echo "-----> $APP linked to $DB_IMAGE database"
+        echo "-----> $APP linked to $CONTAINER_NAME container"
     fi
     ;;
 
   postgresql:logs)
-    DB_IMAGE=postgresql/$APP
-    ID=$(docker ps -a | grep "$DB_IMAGE" |  awk '{print $1}')
+    ID=$(docker ps -a | grep "$CONTAINER_NAME" |  awk '{print $1}')
     docker logs $ID | tail -n 100
     ;;
-    
+
   postgresql:list)
-    CONTAINERS=$(ls $DOKKU_ROOT/.postgresql/volume* | sed -e 's/_/ /' | awk '{print $2}')
+    CONTAINERS=$(ls -1 "$DOKKU_ROOT/.$PLUGIN_NAME/" | awk '{print $1}')
     echo "PostgreSQL containers:"
     for CONTAINER in $CONTAINERS; do
         echo "  - $CONTAINER"
@@ -158,12 +163,13 @@ case "$1" in
 
   help)
     cat && cat<<EOF
-    postgresql:create <app>     Create a PostgreSQL container
-    postgresql:delete <app>     Delete specified PostgreSQL container
-    postgresql:info <app>       Display database informations
-    postgresql:link <app> <db>  Link an app to a PostgreSQL database
-    postgresql:list             Display list of PostgreSQL containers
-    postgresql:logs <app>       Display last logs from PostgreSQL container
+    postgresql:create <app>           Create a PostgreSQL container for <app>
+    postgresql:clone <app> <trg>      Clone PostgreSQL container of <app> for <trg>
+    postgresql:delete <app>           Delete specified PostgreSQL container for <app>
+    postgresql:info <app>             Display <app> PostgreSQL container informations
+    postgresql:link <app> <rabbit>    Link an app to a PostgreSQL container
+    postgresql:list                   Display list of PostgreSQL containers
+    postgresql:logs <app>             Display last logs from <app> PostgreSQL container
 EOF
     ;;
 

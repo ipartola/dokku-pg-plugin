@@ -185,10 +185,9 @@ case "$1" in
 
   help)
     cat && cat<<EOF
-    redis:create <app>                              Create a Redis container
     postgresql:create <app>                         Create a PostgreSQL container for <app>
     postgresql:clone <app> <trg>                    Clone PostgreSQL container of <app> for <trg>
-    postgresql:rebuild <app>                        Rebuil PostgreSQL container of <app> (keep persistend data)
+    postgresql:rebuild <app>                        Rebuild PostgreSQL container of <app> (keep persistend data)
     postgresql:delete <app>                         Delete specified PostgreSQL container for <app>
     postgresql:info <app>                           Display <app> PostgreSQL container informations
     postgresql:link <app> <pgsql>                   Link an app to a PostgreSQL container

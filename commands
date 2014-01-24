@@ -49,7 +49,7 @@ case "$1" in
         DB_PASSWORD=$(< /dev/urandom tr -dc A-Za-z0-9 | head -c 16)
         echo $DB_PASSWORD > "$HOST_DIR/pwd-$APP"
         chown -R dokku:dokku "$HOST_DIR"
-        chmod 700 "$HOST_DIR/pwd-$APP"
+        chmod 600 "$HOST_DIR/pwd-$APP"
     fi
     VOLUME="$HOST_DIR/volume:/opt/postgresql"
     # Stop existing container with the same persistent Rabbitmq
@@ -178,6 +178,7 @@ case "$1" in
     cat && cat<<EOF
     postgresql:create <app>           Create a PostgreSQL container for <app>
     postgresql:clone <app> <trg>      Clone PostgreSQL container of <app> for <trg>
+    postgresql:rebuild <app>          Rebuil PostgreSQL container of <app> (keep persistend data)
     postgresql:delete <app>           Delete specified PostgreSQL container for <app>
     postgresql:info <app>             Display <app> PostgreSQL container informations
     postgresql:link <app> <pgsql>     Link an app to a PostgreSQL container

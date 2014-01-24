@@ -22,13 +22,14 @@ Commands
 --------
 ```
 $ dokku help
-     postgresql:create <app>      Create a PostgreSQL container
-     postgresql:clone <app> <trg> Clone PostgreSQL container of <app> for <trg>
-     postgresql:delete <app>      Delete specified PostgreSQL container
-     postgresql:info <app>        Display database informations
-     postgresql:link <app> <db>   Link an app to a PostgreSQL database
-     postgresql:list              Display list of PostgreSQL containers
-     postgresql:logs <app>        Display last logs from PostgreSQL contain
+    postgresql:create <app>           Create a PostgreSQL container for <app>
+    postgresql:clone <app> <trg>      Clone PostgreSQL container of <app> for <trg>
+    postgresql:rebuild <app>          Rebuil PostgreSQL container of <app> (keep persistend data)
+    postgresql:delete <app>           Delete specified PostgreSQL container for <app>
+    postgresql:info <app>             Display <app> PostgreSQL container informations
+    postgresql:link <app> <pgsql>     Link an app to a PostgreSQL container
+    postgresql:list                   Display list of PostgreSQL containers
+    postgresql:logs <app>             Display last logs from <app> PostgreSQL container
 ```
 
 Simple usage
@@ -65,6 +66,16 @@ cat init.sql | dokku postgresql:create foo
 Deleting databases:
 ```
 dokku postgresql:delete foo
+```
+
+Clone databases (foo to bar):
+```
+dokku postgresql:clone foo bar
+```
+
+Rebuilding container (preserves database):
+```
+dokku postgresql:rebuild foo
 ```
 
 Linking an app to a specific database:

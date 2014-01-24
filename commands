@@ -91,16 +91,19 @@ case "$1" in
             echo "Persistent storage for ${PLUGIN_NAME}_$3 already exists"
             exit 1
         fi
-        # Create new container with copied storage
-        echo
-        echo "-----> Creating a container for $PLUGIN_NAME/$3"
-        dokku postgresql:create $3 > /dev/null
         echo
         echo "-----> Cloning $PLUGIN_NAME/$APP storage"
-        cp -rf "$HOST_DIR" "$TARGET_DIR"
-        dokku postgresql:rebuild > /dev/null
+        #FIXME: fix the access rights issue
+        #cp -rf "$HOST_DIR" "$TARGET_DIR"
+        #dokku postgresql:rebuild $3 > /dev/null
+        #echo
+        #echo "-----> $PLUGIN_NAME/$APP storage cloned to $PLUGIN_NAME/$3"
         echo
-        echo "-----> $PLUGIN_NAME/$APP storage cloned to $PLUGIN_NAME/$3"
+        echo "-----> [Attention]: This command needs access right fix, for now issue following command as root"
+        echo "cp -rf ${HOST_DIR} ${TARGET_DIR}"
+        echo
+        echo "-----> and manualy rebuild ${PLUGIN_NAME}_${3} container"
+        echo "dokku postgresql:rebuild $3"
     fi
     ;;
 

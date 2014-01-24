@@ -52,12 +52,12 @@ case "$1" in
         echo "-----> Reusing $PLUGIN_NAME/$APP storage"
     else
         mkdir -p "$HOST_DIR/volume"
-        # Generate random password for users
-        DB_PASSWORD=$(< /dev/urandom tr -dc A-Za-z0-9 | head -c 16)
-        echo $DB_PASSWORD > "$HOST_DIR/pwd"
-        chown -R dokku:dokku "$HOST_DIR"
-        chmod 600 "$HOST_DIR/pwd"
     fi
+    # Generate random password for users
+    DB_PASSWORD=$(< /dev/urandom tr -dc A-Za-z0-9 | head -c 16)
+    echo $DB_PASSWORD > "$HOST_DIR/pwd"
+    chown -R dokku:dokku "$HOST_DIR"
+    chmod 600 "$HOST_DIR/pwd"
     VOLUME="$HOST_DIR/volume:/opt/postgresql"
     # Launch container
     ID=$(docker run -v $VOLUME -name=$CONTAINER_NAME -d $CONTAINER_IMAGE /usr/bin/start-pgsql.sh $DB_PASSWORD)

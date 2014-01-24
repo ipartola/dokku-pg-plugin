@@ -74,12 +74,10 @@ case "$1" in
     ID=$(docker ps -a | grep "$CONTAINER_NAME" |  awk '{print $1}')
     if [[ ! -z "$ID" ]]; then
         echo
-        echo "-----> Stopping $CONTAINER_NAME container"
+        echo "-----> Stopping & removing $CONTAINER_NAME container"
         docker stop $ID > /dev/null
+        docker rm $ID > /dev/null
     fi
-    docker rm $ID > /dev/null
-    echo
-    echo "-----> $CONTAINER_NAME container removed"
     dokku postgresql:create $APP
     ;;
 

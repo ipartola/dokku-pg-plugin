@@ -60,7 +60,7 @@ case "$1" in
     DB_PASSWORD=$(cat "$HOST_DIR/pwd")
     VOLUME="$HOST_DIR/volume:/opt/postgresql"
     # Launch container
-    ID=$(docker run -v $VOLUME -name=$CONTAINER_NAME -d $CONTAINER_IMAGE /usr/bin/start-pgsql.sh $DB_PASSWORD)
+    ID=$(docker run -v $VOLUME --name=$CONTAINER_NAME -d $CONTAINER_IMAGE /usr/bin/start-pgsql.sh $DB_PASSWORD)
     sleep 1
     # Link to a potential existing app
     dokku postgresql:link $APP $APP

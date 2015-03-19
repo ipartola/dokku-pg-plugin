@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 source "$(dirname $0)/../common/functions"
 set -o pipefail; [[ $DOKKU_TRACE ]] && set -x
+set +e
 
 # plugin defaults
 PLUGIN_NAME="postgresql"

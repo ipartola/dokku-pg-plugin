@@ -1,55 +1,58 @@
 #!/usr/bin/env bash
+source "$(dirname $0)/../common/functions"
 set -o pipefail; [[ $DOKKU_TRACE ]] && set -x
 
-# Check if name is specified
+# plugin defaults
+PLUGIN_NAME="postgresql"
+PLUGIN_ALIAS="db"
+CONTAINER_IMAGE="jlachowski/postgresql"
+DB_PORT=5432
+
+# Check if app name is specified
 if [[ $1 == postgresql:* ]]; then
-    if [ -z $2 ] && [ $1 != postgresql:list ]; then
-        echo "You must specify an app name"
-        exit 1
+    if [[ -z $2 ]] && [ $1 != postgresql:list ]; then
+        dokku_log_fail "You must specify an app name"
     else
         APP="$2"
         # Check if app exists with the same name
-        if [[ -d "$DOKKU_ROOT/$APP" ]]; then
-            APP_EXISTS=true
-        else
-            APP_EXISTS=false
-        fi
+        verify_app_name "$APP"
     fi
     if [[ ! -d "$PLUGIN_PATH/link" ]]; then
-        echo "Link plugin not found... Did you install it from https://github.com/rlaneve/dokku-link?"
-        exit 1
+        dokku_log_fail "Link plugin not found... Did you install it from https://github.com/rlaneve/dokku-link?"
     fi
-    PLUGIN_NAME="postgresql"
-    PLUGIN_ALIAS="db"
-    CONTAINER_NAME="${PLUGIN_NAME}_${APP}"
+    PLUGIN_FLAG_PERSISTANCE_FILE="$DOKKU_ROOT/$APP/POSTGRESQL"
+    CONTAINER_NAME="${PLUGIN_NAME}-${APP}"
     HOST_DIR="$DOKKU_ROOT/.$PLUGIN_NAME/$APP"
-    CONTAINER_IMAGE="jlachowski/postgresql"
-    DB_PORT=5432
 fi
 
 case "$1" in
+
+  postgresql:enable)
+    dokku_log_info1 "Enabling Postgresql for $APP..."
+
+    touch $PLUGIN_FLAG_PERSISTENCE_FILE
+
+    dokku_log_info2 "Postgresql enabled for $APP"
+    dokku_log_verbose "POstgresql will be started on next app build / deploy"
+    ;;
 
   postgresql:create)
     # Check if Postgresql image is installed
     IMAGE=$(docker images | grep "$CONTAINER_IMAGE" |  awk '{print $3}')
     if [[ -z $IMAGE ]]; then
-        echo "PostgreSQL image not found... Did you run 'dokku plugins-install' ?"
-        exit 1
+        dokku_log_fail "PostgreSQL image not found... Did you run 'dokku plugins-install' ?"
     fi
     # check for existing container with the same persistent Postgresql
     ID=$(docker ps -a | grep "$CONTAINER_NAME" |  awk '{print $1}')
     if [[ ! -z "$ID" ]]; then
-        echo
-        echo "-----> Container $CONTAINER_NAME already exist. Please use rebuild or delete command"
-        exit 1
+        dokku_log_fail "Container $CONTAINER_NAME already exist. Please use rebuild or delete command"
     fi
     if [[ ! -d "$HOST_DIR" ]]; then
         mkdir -p "$HOST_DIR"
     fi
     # Check if an existing storage volume exists
     if [[ -d "$HOST_DIR/volume" ]]; then
-        echo
-        echo "-----> Reusing $PLUGIN_NAME/$APP storage"
+        dokku_log_info "Reusing $PLUGIN_NAME/$APP storage"
     else
         mkdir -p "$HOST_DIR/volume"
         # Generate random password for users
@@ -64,8 +67,8 @@ case "$1" in
     sleep 1
     # Link to a potential existing app
     dokku postgresql:link $APP $APP
+    dokku_log_info "PostgreSQL container $CONTAINER_NAME created (using $CONTAINER_IMAGE)"
     echo
-    echo "-----> PostgreSQL container $CONTAINER_NAME created (using $CONTAINER_IMAGE)"
     sleep 1
     dokku postgresql:info $APP
     ;;
@@ -73,8 +76,8 @@ case "$1" in
   postgresql:rebuild)
     ID=$(docker ps -a | grep "$CONTAINER_NAME" |  awk '{print $1}')
     if [[ ! -z "$ID" ]]; then
+        dokku_log_info "Stopping & removing $CONTAINER_NAME container"
         echo
-        echo "-----> Stopping & removing $CONTAINER_NAME container"
         docker stop $ID > /dev/null
         docker rm $ID > /dev/null
     fi
@@ -82,108 +85,123 @@ case "$1" in
     ;;
 
   postgresql:clone)
-    if $APP_EXISTS; then
-        # Check argument
-        if [[ -z $3 ]]; then
-            echo "You must specify a name for the clone"
-            exit 1
-        fi
-        TARGET_DIR="$DOKKU_ROOT/.$PLUGIN_NAME/$3"
-        if [[ -d "$TARGET_DIR" ]]; then
-            echo "Persistent storage for ${PLUGIN_NAME}_$3 already exists"
-            exit 1
-        fi
-        echo
-        echo "-----> Cloning $PLUGIN_NAME/$APP storage"
-        #FIXME: fix the access rights issue
-        #cp -rf "$HOST_DIR" "$TARGET_DIR"
-        #dokku postgresql:rebuild $3 > /dev/null
-        #echo
-        #echo "-----> $PLUGIN_NAME/$APP storage cloned to $PLUGIN_NAME/$3"
-        echo
-        echo "-----> [Attention]: This command needs access right fix, for now issue following command as root"
-        echo "cp -rf ${HOST_DIR} ${TARGET_DIR}"
-        echo
-        echo "-----> and manualy rebuild ${PLUGIN_NAME}_${3} container"
-        echo "dokku postgresql:rebuild $3"
+    # Check argument
+    if [[ -z $3 ]]; then
+        dokku_log_fail "You must specify a name for the clone"
     fi
+    TARGET_DIR="$DOKKU_ROOT/.$PLUGIN_NAME/$3"
+    if [[ -d "$TARGET_DIR" ]]; then
+        dokku_log_fail "Persistent storage for ${PLUGIN_NAME}-$3 already exists"
+    fi
+    echo
+    dokku_log_info "Cloning $PLUGIN_NAME/$APP storage"
+    #FIXME: fix the access rights issue
+    #cp -rf "$HOST_DIR" "$TARGET_DIR"
+    #dokku postgresql:rebuild $3 > /dev/null
+    #echo
+    #echo "-----> $PLUGIN_NAME/$APP storage cloned to $PLUGIN_NAME/$3"
+    echo
+    dokku_log_warn "[Attention]: This command needs access right fix, for now issue following command as root"
+    dokku_log_verbose "cp -rf ${HOST_DIR} ${TARGET_DIR}"
+    echo
+    dokku_log_warn "and manualy rebuild ${PLUGIN_NAME}-${3} container"
+    dokku_log_verbose "dokku postgresql:rebuild $3"
     ;;
 
   postgresql:destroy)
-    echo
-    echo "-----> This will permanently remove all the stored data. Are you sure (yes/no)?"
-    read ANSWER
-    if [[ $ANSWER == "yes" ]]; then
-        # Stop the container
-        ID=$(docker ps -a | grep "$CONTAINER_NAME" |  awk '{print $1}')
-        if [[ ! -z $ID ]]; then
-            docker stop $ID > /dev/null
-            docker rm $ID > /dev/null
-        fi
-
-        dokku link:delete "$APP" "$CONTAINER_NAME" "$PLUGIN_ALIAS"
-        dokku config:unset "$APP" "DB_SCHEME" "DB_USERNAME" "DB_PASSWORD" "DB_PATH"
-
-        # Remove persistent volume
-        if [[ -d "$HOST_DIR" ]]; then
-            rm -rf "$HOST_DIR"
-            echo
-            echo "-----> Deleted persistent storage for $CONTAINER_NAME"
-        fi
+    confirmed=0
+    while [[ $confirmed -eq 0 ]]
+    do
+        dokku_log_warn "WARNING: Potentially Destructive Action"
+        dokku_log_warn "This command will destroy the Postgresql instance for"
+        dokku_log_warn "$APP (including all volumes and data)."
+        dokku_log_warn "To proceed, type \"$APP\""
         echo
-        echo "-----> Deleted PostgreSQl container $CONTAINER_NAME"
+
+        read -p "> " app_name_verification
+        if [[ "$app_name_verification" != "$APP" ]]; then
+            dokku_log_warn "Confirmation did not match."
+            echo
+        else
+            confirmed=1
+        fi
+    done
+    dokku_log_info1 "Destroying Postgresql for $APP..."
+    
+    [[ -f "$PLUGIN_FLAG_PERSISTENCE_FILE" ]] && rm "$PLUGIN_FLAG_PERSISTENCE_FILE"
+
+    ID=$(docker ps -a | grep "$CONTAINER_NAME" |  awk '{print $1}')
+    
+    # Stop and remove the container    
+    if [[ ! -z $ID ]]; then
+        docker stop $ID > /dev/null
+        docker rm $ID > /dev/null
     fi
+
+    # Remove docker link
+    dokku link:delete "$APP" "$CONTAINER_NAME" "$PLUGIN_ALIAS"
+    
+    # Unset variables
+    dokku config:unset "$APP" "DB_SCHEME" "DB_USERNAME" "DB_PASSWORD" "DB_PATH"
+
+    # Remove persistent volume
+    if [[ -d "$HOST_DIR" ]]; then
+        rm -rf "$HOST_DIR"
+    fi
+    dokku_log_info2 "Postgresql instance / volume destroyed:"
+    dokku_log_verbose "Application: $APP"
     ;;
 
   postgresql:info)
     ID=$(docker ps -a | grep "$CONTAINER_NAME" |  awk '{print $1}')
     IP=$(docker inspect $ID | grep IPAddress | awk '{ print $2 }' | tr -d ',"')
     DOCKER_GATEWAY=$(docker inspect $ID | grep Gateway | awk '{ print $2 }' | tr -d ',"')
-    echo
-    echo "       Host: $IP"
-    echo "       Gateway: $DOCKER_GATEWAY"
-    echo "       Secret port: $DB_PORT"
+    dokku_log_verbose "Host: $IP"
+    dokku_log_verbose "Gateway: $DOCKER_GATEWAY"
+    dokku_log_verbose "Secret port: $DB_PORT"
     echo
     ;;
 
   postgresql:link)
-    if $APP_EXISTS; then
-        # Check argument
-        if [[ -z $3 ]]; then
-            echo "You must specify a container name"
-            exit 1
-        fi
-        CONTAINER_NAME="${PLUGIN_NAME}_$3"
-        if [[ ! -f "$HOST_DIR/pwd" ]]; then
-            echo "Postgresql is not correctly initialized"
-            exit 0
-        fi
-        #ID=$(docker ps -a | grep "$CONTAINER_NAME" |  awk '{print $1}')
-        #IP=$(docker inspect $ID | grep IPAddress | awk '{ print $2 }' | tr -d ',"')
-        DB_PASSWORD=$(cat "$HOST_DIR/pwd")
-
-        dokku link:create "$APP" "$CONTAINER_NAME" "$PLUGIN_ALIAS"
-        dokku config:set $APP "DB_SCHEME=postgresql" "DB_USERNAME=root" "DB_PASSWORD=$DB_PASSWORD" "DB_PATH=/db"
-        echo
-        echo "-----> $APP linked to $CONTAINER_NAME container"
+    # Check argument
+    if [[ -z $3 ]]; then
+        dokku_log_fail "You must specify a container name"
     fi
+    CONTAINER_NAME="${PLUGIN_NAME}_$3"
+    if [[ ! -f "$HOST_DIR/pwd" ]]; then
+        dokku_log_warn "Postgresql is not correctly initialized"
+        exit 0
+    fi
+    #ID=$(docker ps -a | grep "$CONTAINER_NAME" |  awk '{print $1}')
+    #IP=$(docker inspect $ID | grep IPAddress | awk '{ print $2 }' | tr -d ',"')
+    DB_PASSWORD=$(cat "$HOST_DIR/pwd")
+
+    dokku link:create "$APP" "$CONTAINER_NAME" "$PLUGIN_ALIAS"
+    dokku config:set $APP "DB_SCHEME=postgresql" "DB_USERNAME=root" "DB_PASSWORD=$DB_PASSWORD" "DB_PATH=/db"
+    echo
+    dokku_log_info "$APP linked to $CONTAINER_NAME container"
     ;;
 
   postgresql:logs)
     ID=$(docker ps -a | grep "$CONTAINER_NAME" |  awk '{print $1}')
-    docker logs $ID | tail -n 100
+    if [[ $3 == "-t" ]]; then
+        docker logs --follow $ID
+    else
+        docker logs $ID | tail -n 100
+    fi
     ;;
 
   postgresql:list)
     CONTAINERS=$(ls -1 "$DOKKU_ROOT/.$PLUGIN_NAME/" | awk '{print $1}')
-    echo "PostgreSQL containers:"
+    dokku_log_info2 "PostgreSQL containers:"
     for CONTAINER in $CONTAINERS; do
-        echo "  - $CONTAINER"
+        dokku_log_verbose "- $CONTAINER"
     done
     ;;
 
   help)
     cat && cat<<EOF
+    postgresql:enable <app>                         Enable PostgreSQL for an <app>  for next build
     postgresql:create <app>                         Create a PostgreSQL container for <app>
     postgresql:clone <app> <trg>                    Clone PostgreSQL container of <app> for <trg>
     postgresql:rebuild <app>                        Rebuild PostgreSQL container of <app> (keep persistend data)

@@ -4,10 +4,7 @@ set -o pipefail; [[ $DOKKU_TRACE ]] && set -x
 set +e
 
 # plugin defaults
-PLUGIN_NAME="postgresql"
-PLUGIN_ALIAS="db"
-CONTAINER_IMAGE="jlachowski/postgresql"
-DB_PORT=5432
+source "$(dirname $0)/defaults
 
 # Check if app name is specified
 if [[ $1 == postgresql:* ]]; then
@@ -23,7 +20,7 @@ if [[ $1 == postgresql:* ]]; then
     fi
 fi
 
-PLUGIN_FLAG_PERSISTANCE_FILE="$DOKKU_ROOT/$APP/POSTGRESQL"
+PLUGIN_FLAG_PERSISTANCE_FILE="$DOKKU_ROOT/$APP/$PERSISTANCE_FILE"
 CONTAINER_NAME="${PLUGIN_NAME}-${APP}"
 HOST_DIR="$DOKKU_ROOT/.$PLUGIN_NAME/$APP"
 

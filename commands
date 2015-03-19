@@ -40,7 +40,7 @@ case "$1" in
     dokku_log_info2 "Enabling Postgresql for $APP..."
     touch "$PLUGIN_FLAG_PERSISTANCE_FILE"
     dokku_log_info2 "Postgresql enabled for $APP"
-    dokku_log_verbose "POstgresql will be started on next app build / deploy"
+    dokku_log_verbose "Postgresql will be started on next app build / deploy"
     ;;
 
   postgresql:create)
@@ -59,7 +59,7 @@ case "$1" in
     fi
     # Check if an existing storage volume exists
     if [[ -d "$HOST_DIR/volume" ]]; then
-        dokku_log_info "Reusing $PLUGIN_NAME/$APP storage"
+        dokku_log_info1 "Reusing $PLUGIN_NAME/$APP storage"
     else
         mkdir -p "$HOST_DIR/volume"
         # Generate random password for users
@@ -82,7 +82,7 @@ case "$1" in
   postgresql:rebuild)
     ID=$(docker ps -a | grep "$CONTAINER_NAME" |  awk '{print $1}')
     if [[ ! -z "$ID" ]]; then
-        dokku_log_info "Stopping & removing $CONTAINER_NAME container"
+        dokku_log_info1 "Stopping & removing $CONTAINER_NAME container"
         docker stop $ID > /dev/null
         docker rm $ID > /dev/null
     fi
@@ -98,7 +98,7 @@ case "$1" in
     if [[ -d "$TARGET_DIR" ]]; then
         dokku_log_fail "Persistent storage for ${PLUGIN_NAME}-$3 already exists"
     fi
-    dokku_log_info "Cloning $PLUGIN_NAME/$APP storage"
+    dokku_log_info1 "Cloning $PLUGIN_NAME/$APP storage"
     #FIXME: fix the access rights issue
     #cp -rf "$HOST_DIR" "$TARGET_DIR"
     #dokku postgresql:rebuild $3 > /dev/null
@@ -182,7 +182,7 @@ case "$1" in
 
     dokku link:create "$APP" "$CONTAINER_NAME" "$PLUGIN_ALIAS"
     dokku config:set $APP "DB_SCHEME=postgresql" "DB_USERNAME=root" "DB_PASSWORD=$DB_PASSWORD" "DB_PATH=/db"
-    dokku_log_info "$APP linked to $CONTAINER_NAME container"
+    dokku_log_info1 "$APP linked to $CONTAINER_NAME container"
     ;;
 
   postgresql:logs)
@@ -204,7 +204,7 @@ case "$1" in
     postgresql:destroy <app>                        Delete PostgreSQL container and all PostgreSQL persistant files for <app>
     postgresql:info <app>                           Display <app> PostgreSQL container informations
     postgresql:link <app> <pgsql>                   Link an app to a PostgreSQL container
-    postgresql:logs <app>                           Display last logs from <app> PostgreSQL container
+    postgresql:logs <app> [-t]                      Display last logs from <app> PostgreSQL container (-t follow)
 EOF
     ;;
 

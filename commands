@@ -172,7 +172,7 @@ case "$1" in
     if [[ -z $3 ]]; then
         dokku_log_fail "You must specify a container name"
     fi
-    CONTAINER_NAME="${PLUGIN_NAME}_$3"
+    CONTAINER_NAME="${PLUGIN_NAME}-$3"
     if [[ ! -f "$HOST_DIR/pwd" ]]; then
         dokku_log_warn "Postgresql is not correctly initialized"
         exit 0

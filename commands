@@ -76,7 +76,6 @@ case "$1" in
     ID=$(docker ps -a | grep "$CONTAINER_NAME" |  awk '{print $1}')
     if [[ ! -z "$ID" ]]; then
         dokku_log_info "Stopping & removing $CONTAINER_NAME container"
-        echo
         docker stop $ID > /dev/null
         docker rm $ID > /dev/null
     fi
@@ -92,17 +91,14 @@ case "$1" in
     if [[ -d "$TARGET_DIR" ]]; then
         dokku_log_fail "Persistent storage for ${PLUGIN_NAME}-$3 already exists"
     fi
-    echo
     dokku_log_info "Cloning $PLUGIN_NAME/$APP storage"
     #FIXME: fix the access rights issue
     #cp -rf "$HOST_DIR" "$TARGET_DIR"
     #dokku postgresql:rebuild $3 > /dev/null
     #echo
     #echo "-----> $PLUGIN_NAME/$APP storage cloned to $PLUGIN_NAME/$3"
-    echo
     dokku_log_warn "[Attention]: This command needs access right fix, for now issue following command as root"
     dokku_log_verbose "cp -rf ${HOST_DIR} ${TARGET_DIR}"
-    echo
     dokku_log_warn "and manualy rebuild ${PLUGIN_NAME}-${3} container"
     dokku_log_verbose "dokku postgresql:rebuild $3"
     ;;
@@ -155,10 +151,12 @@ case "$1" in
     ID=$(docker ps -a | grep "$CONTAINER_NAME" |  awk '{print $1}')
     IP=$(docker inspect $ID | grep IPAddress | awk '{ print $2 }' | tr -d ',"')
     DOCKER_GATEWAY=$(docker inspect $ID | grep Gateway | awk '{ print $2 }' | tr -d ',"')
+    dokku_log_info2 "Postgresql info:"
+    dokku_log_verbose "Application: $APP"
+    dokku_log_verbose "Postgresql: $CONTAINER_NAME (using $CONTAINER_IMAGE)"
     dokku_log_verbose "Host: $IP"
     dokku_log_verbose "Gateway: $DOCKER_GATEWAY"
     dokku_log_verbose "Secret port: $DB_PORT"
-    echo
     ;;
 
   postgresql:link)
@@ -177,7 +175,6 @@ case "$1" in
 
     dokku link:create "$APP" "$CONTAINER_NAME" "$PLUGIN_ALIAS"
     dokku config:set $APP "DB_SCHEME=postgresql" "DB_USERNAME=root" "DB_PASSWORD=$DB_PASSWORD" "DB_PATH=/db"
-    echo
     dokku_log_info "$APP linked to $CONTAINER_NAME container"
     ;;
 

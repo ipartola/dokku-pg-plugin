@@ -1,0 +1,6 @@
+# plugin defaults
+PLUGIN_NAME="postgresql"
+PLUGIN_ALIAS="db"
+PERSISTANCE_FILE="POSTGRESQL"
+CONTAINER_IMAGE="jlachowski/postgresql"
+DB_PORT=5432

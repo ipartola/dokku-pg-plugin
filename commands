@@ -109,7 +109,7 @@ case "$1" in
     fi
     ;;
 
-  postgresql:delete)
+  postgresql:destroy)
     echo
     echo "-----> This will permanently remove all the stored data. Are you sure (yes/no)?"
     read ANSWER
@@ -187,7 +187,7 @@ case "$1" in
     postgresql:create <app>                         Create a PostgreSQL container for <app>
     postgresql:clone <app> <trg>                    Clone PostgreSQL container of <app> for <trg>
     postgresql:rebuild <app>                        Rebuild PostgreSQL container of <app> (keep persistend data)
-    postgresql:delete <app>                         Delete specified PostgreSQL container for <app>
+    postgresql:destroy <app>                        Delete PostgreSQL container and all PostgreSQL persistant files for <app>
     postgresql:info <app>                           Display <app> PostgreSQL container informations
     postgresql:link <app> <pgsql>                   Link an app to a PostgreSQL container
     postgresql:list                                 Display list of PostgreSQL containers

@@ -5,13 +5,15 @@ set +exo pipefail
 # Fail on equation failure
 set -e
 
+source "$(dirname $0)/defaults"
+
 APP="$1"
-PLUGIN_FLAG_PERSISTENCE_FILE="$DOKKU_ROOT/$APP/PROGRESQL"
-CONTAINER_NAME="progresql-$APP"
+PLUGIN_FLAG_PERSISTANCE_FILE="$DOKKU_ROOT/$APP/$PERSISTANCE_FILE"
+CONTAINER_NAME="${PLUGIN_NAME}-${APP}"
 
 # Only start Postgresql if it is enabled
 if [[ -f $PLUGIN_FLAG_PERSISTENCE_FILE ]]; then
-	dokku_log_info1 "Preparing Postgresql for $APP..."
+  dokku_log_info1 "Preparing Postgresql for $APP..."
 
   # Link to app
   dokku link:create $APP $CONTAINER_NAME db

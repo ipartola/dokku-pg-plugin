@@ -22,10 +22,11 @@ Commands
 --------
 ```
 $ dokku help
+    postgresql:enable <app>           Enable PostgreSQL for an <app> on next build / deploy
     postgresql:create <app>           Create a PostgreSQL container for <app>
     postgresql:clone <app> <trg>      Clone PostgreSQL container of <app> for <trg>
     postgresql:rebuild <app>          Rebuil PostgreSQL container of <app> (keep persistend data)
-    postgresql:delete <app>           Delete specified PostgreSQL container for <app>
+    postgresql:destroy <app>       Delete specified PostgreSQL container for <app>
     postgresql:info <app>             Display <app> PostgreSQL container informations
     postgresql:link <app> <pgsql>     Link an app to a PostgreSQL container
     postgresql:list                   Display list of PostgreSQL containers

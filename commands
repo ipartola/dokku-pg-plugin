@@ -12,8 +12,6 @@ if [[ $1 == postgresql:* ]]; then
         dokku_log_fail "You must specify an app name"
     else
         APP="$2"
-        # Check if app exists with the same name
-        verify_app_name "$APP"
     fi
     if [[ ! -d "$PLUGIN_PATH/link" ]]; then
         dokku_log_fail "Link plugin not found... Did you install it from https://github.com/rlaneve/dokku-link?"
@@ -35,6 +33,7 @@ case "$1" in
     ;;
     
   postgresql:enable)
+    verify_app_name "$APP"
     dokku_log_info1 "Enabling Postgresql for $APP..."
     touch "$PLUGIN_FLAG_PERSISTANCE_FILE"
     dokku_log_info2 "Postgresql enabled for $APP"
@@ -165,6 +164,7 @@ case "$1" in
     ;;
 
   postgresql:link)
+    verify_app_name "$APP"
     # Check argument
     if [[ -z $3 ]]; then
         dokku_log_fail "You must specify a container name"

@@ -5,10 +5,11 @@ set +exo pipefail
 # Fail on equation failure
 set -e
 
+source "$(dirname $0)/defaults"
+
 APP="$1"
-PLUGIN_FLAG_PERSISTANCE_FILE="$DOKKU_ROOT/$APP/POSTGRESQL"
-PLUGIN_NAME="postgresql"
-CONTAINER_NAME="$PLUGIN_NAME-$APP"
+PLUGIN_FLAG_PERSISTANCE_FILE="$DOKKU_ROOT/$APP/$PERSISTANCE_FILE"
+CONTAINER_NAME="${PLUGIN_NAME}-${APP}"
 
 # Only start Postgresql if it is enabled
 if [[ -f $PLUGIN_FLAG_PERSISTENCE_FILE ]]; then
@@ -25,7 +26,7 @@ if [[ -f $PLUGIN_FLAG_PERSISTENCE_FILE ]]; then
     ID=$(docker ps -a | grep "$CONTAINER_NAME" | awk '{print $1}')
     if [[ ! -z $ID ]]; then
         ID=$(docker rm $ID)
-        dokku_log_info "Removed stale Postgresql container $ID"
+        dokku_log_info1 "Removed stale Postgresql container $ID"
     fi
 
     dokku postgresql:create $APP

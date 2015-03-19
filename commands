@@ -10,7 +10,7 @@ DB_PORT=5432
 
 # Check if app name is specified
 if [[ $1 == postgresql:* ]]; then
-    if [[ -z $2 ]] && [ $1 != postgresql:list ]; then
+    if [[ -z $2 ]]; then
         dokku_log_fail "You must specify an app name"
     else
         APP="$2"
@@ -20,18 +20,25 @@ if [[ $1 == postgresql:* ]]; then
     if [[ ! -d "$PLUGIN_PATH/link" ]]; then
         dokku_log_fail "Link plugin not found... Did you install it from https://github.com/rlaneve/dokku-link?"
     fi
-    PLUGIN_FLAG_PERSISTANCE_FILE="$DOKKU_ROOT/$APP/POSTGRESQL"
-    CONTAINER_NAME="${PLUGIN_NAME}-${APP}"
-    HOST_DIR="$DOKKU_ROOT/.$PLUGIN_NAME/$APP"
 fi
+
+PLUGIN_FLAG_PERSISTANCE_FILE="$DOKKU_ROOT/$APP/POSTGRESQL"
+CONTAINER_NAME="${PLUGIN_NAME}-${APP}"
+HOST_DIR="$DOKKU_ROOT/.$PLUGIN_NAME/$APP"
 
 case "$1" in
 
+  postgresql)
+    CONTAINERS=$(ls -1 "$DOKKU_ROOT/.$PLUGIN_NAME/" | awk '{print $1}')
+    dokku_log_info2 "PostgreSQL containers:"
+    for CONTAINER in $CONTAINERS; do
+        dokku_log_verbose "- $CONTAINER"
+    done
+    ;;
+    
   postgresql:enable)
-    dokku_log_info1 "Enabling Postgresql for $APP..."
-
-    touch $PLUGIN_FLAG_PERSISTENCE_FILE
-
+    dokku_log_info2 "Enabling Postgresql for $APP..."
+    touch "$PLUGIN_FLAG_PERSISTANCE_FILE"
     dokku_log_info2 "Postgresql enabled for $APP"
     dokku_log_verbose "POstgresql will be started on next app build / deploy"
     ;;
@@ -187,16 +194,9 @@ case "$1" in
     fi
     ;;
 
-  postgresql:list)
-    CONTAINERS=$(ls -1 "$DOKKU_ROOT/.$PLUGIN_NAME/" | awk '{print $1}')
-    dokku_log_info2 "PostgreSQL containers:"
-    for CONTAINER in $CONTAINERS; do
-        dokku_log_verbose "- $CONTAINER"
-    done
-    ;;
-
   help)
     cat && cat<<EOF
+    postgresql                                      Display list of PostgreSQL containers
     postgresql:enable <app>                         Enable PostgreSQL for an <app>  for next build
     postgresql:create <app>                         Create a PostgreSQL container for <app>
     postgresql:clone <app> <trg>                    Clone PostgreSQL container of <app> for <trg>
@@ -204,7 +204,6 @@ case "$1" in
     postgresql:destroy <app>                        Delete PostgreSQL container and all PostgreSQL persistant files for <app>
     postgresql:info <app>                           Display <app> PostgreSQL container informations
     postgresql:link <app> <pgsql>                   Link an app to a PostgreSQL container
-    postgresql:list                                 Display list of PostgreSQL containers
     postgresql:logs <app>                           Display last logs from <app> PostgreSQL container
 EOF
     ;;

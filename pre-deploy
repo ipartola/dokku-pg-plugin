@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+source "$(dirname $0)/../common/functions"
+# Reset bash mode from importing the functions
+set +exo pipefail
+# Fail on equation failure
+set -e
+
+APP="$1"
+PLUGIN_FLAG_PERSISTANCE_FILE="$DOKKU_ROOT/$APP/POSTGRESQL"
+PLUGIN_NAME="postgresql"
+CONTAINER_NAME="$PLUGIN_NAME-$APP"
+
+# Only start Postgresql if it is enabled
+if [[ -f $PLUGIN_FLAG_PERSISTENCE_FILE ]]; then
+    dokku_log_info1 "Starting Postgresql for $APP..."
+
+    # Check if Postgresql is already running
+    ID=$(docker ps | grep "$CONTAINER_NAME" | awk '{print $1}')
+    if [[ ! -z $ID ]]; then
+        dokku_log_verbose "Postgresql container already running: $CONTAINER_NAME"
+        exit 0
+    fi
+
+    # Remove old stopped container with the same name, if it exists
+    ID=$(docker ps -a | grep "$CONTAINER_NAME" | awk '{print $1}')
+    if [[ ! -z $ID ]]; then
+        ID=$(docker rm $ID)
+        dokku_log_info "Removed stale Postgresql container $ID"
+    fi
+
+    dokku postgresql:create $APP
+
+    dokku_log_info2 "Redis started:"
+    dokku_log_verbose "Application: $APP"
+    dokku_log_verbose "Redis: $REDIS_CONTAINER_NAME"
+fi

@@ -67,10 +67,9 @@ case "$1" in
     sleep 1
     # Link to a potential existing app
     dokku postgresql:link $APP $APP
-    dokku_log_info "PostgreSQL container $CONTAINER_NAME created (using $CONTAINER_IMAGE)"
-    echo
-    sleep 1
-    dokku postgresql:info $APP
+    dokku_log_info2 "Postgresql started:"
+    dokku_log_verbose "Application: $APP"
+    dokku_log_verbose "Postgresql: $CONTAINER_NAME (using $CONTAINER_IMAGE)"
     ;;
   
   postgresql:rebuild)

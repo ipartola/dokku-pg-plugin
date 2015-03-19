@@ -33,7 +33,7 @@ case "$1" in
     CONTAINERS=$(ls -1 "$DOKKU_ROOT/.$PLUGIN_NAME/" | awk '{print $1}')
     dokku_log_info2 "PostgreSQL containers:"
     for CONTAINER in $CONTAINERS; do
-        dokku_log_verbose "- $CONTAINER"
+        dokku_log_verbose "$CONTAINER"
     done
     ;;
     

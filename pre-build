@@ -2,8 +2,6 @@
 source "$(dirname $0)/../common/functions"
 # Reset bash mode from importing the functions
 set +exo pipefail
-# Fail on equation failure
-set -e
 
 source "$(dirname $0)/defaults"
 
@@ -11,4 +9,4 @@ APP="$1"
 PLUGIN_FLAG_PERSISTANCE_FILE="$DOKKU_ROOT/$APP/$PERSISTANCE_FILE"
 CONTAINER_NAME="${PLUGIN_NAME}-${APP}"
 
-dokku link:delete "$APP" "CONTAINER_NAME" db
+dokku link:delete "$APP" "$CONTAINER_NAME" "$PLUGIN_ALIAS"

@@ -38,7 +38,7 @@ case "$1" in
     ;;
     
   postgresql:enable)
-    dokku_log_info2 "Enabling Postgresql for $APP..."
+    dokku_log_info1 "Enabling Postgresql for $APP..."
     touch "$PLUGIN_FLAG_PERSISTANCE_FILE"
     dokku_log_info2 "Postgresql enabled for $APP"
     dokku_log_verbose "Postgresql will be started on next app build / deploy"

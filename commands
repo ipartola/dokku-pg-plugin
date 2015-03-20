@@ -3,11 +3,11 @@ source "$(dirname $0)/../common/functions"
 set -o pipefail; [[ $DOKKU_TRACE ]] && set -x
 set +e
 
-# plugin defaults
-source "$(dirname $0)/defaults"
-
 # Check if app name is specified
-if [[ $1 == postgresql:* ]]; then
+if [[ $1 == postgresql ]] || [[ $1 == postgresql:* ]]; then
+    # plugin defaults
+    source "$(dirname $0)/defaults"
+
     if [[ -z $2 ]]; then
         dokku_log_fail "You must specify an app name"
     else
@@ -16,11 +16,11 @@ if [[ $1 == postgresql:* ]]; then
     if [[ ! -d "$PLUGIN_PATH/link" ]]; then
         dokku_log_fail "Link plugin not found... Did you install it from https://github.com/rlaneve/dokku-link?"
     fi
-fi
 
-PLUGIN_FLAG_PERSISTANCE_FILE="$DOKKU_ROOT/$APP/$PERSISTANCE_FILE"
-CONTAINER_NAME="${PLUGIN_NAME}-${APP}"
-HOST_DIR="$DOKKU_ROOT/.$PLUGIN_NAME/$APP"
+    PLUGIN_FLAG_PERSISTANCE_FILE="$DOKKU_ROOT/$APP/$PERSISTANCE_FILE"
+    CONTAINER_NAME="${PLUGIN_NAME}-${APP}"
+    HOST_DIR="$DOKKU_ROOT/.$PLUGIN_NAME/$APP"
+fi
 
 case "$1" in
 

@@ -14,6 +14,6 @@ if [[ -f $PLUGIN_FLAG_PERSISTENCE_FILE ]]; then
   dokku_log_info1 "Preparing Postgresql for $APP..."
 
   # Link to app
-  dokku link:create "$APP" "$CONTAINER_NAME" "$PLUGIN_ALIAS""
+  dokku link:create "$APP" "$CONTAINER_NAME" "$PLUGIN_ALIAS"
   dokku_log_info1 "Postgresql container linked: $APP -> $CONTAINER_NAME"
 fi

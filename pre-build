@@ -6,7 +6,6 @@ set -eo pipefail; [[ $DOKKU_TRACE ]] && set -x
 source "$(dirname $0)/defaults"
 
 APP="$1"
-PLUGIN_FLAG_PERSISTANCE_FILE="$DOKKU_ROOT/$APP/$PERSISTANCE_FILE"
 CONTAINER_NAME="${PLUGIN_NAME}-${APP}"
 
 dokku link:delete "$APP" "$CONTAINER_NAME" "$PLUGIN_ALIAS"

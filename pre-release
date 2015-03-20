@@ -10,7 +10,7 @@ PLUGIN_FLAG_PERSISTANCE_FILE="$DOKKU_ROOT/$APP/$PERSISTANCE_FILE"
 CONTAINER_NAME="${PLUGIN_NAME}-${APP}"
 
 # Only start Postgresql if it is enabled
-if [[ -f $PLUGIN_FLAG_PERSISTENCE_FILE ]]; then
+if [[ -f $PLUGIN_FLAG_PERSISTANCE_FILE ]]; then
   dokku_log_info1 "Preparing Postgresql for $APP..."
 
   # Link to app

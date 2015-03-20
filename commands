@@ -135,11 +135,13 @@ case "$1" in
         docker rm $ID > /dev/null
     fi
 
-    # Remove docker link
-    dokku link:delete "$APP" "$CONTAINER_NAME" "$PLUGIN_ALIAS"
+    if [[ ! -d "$DOKKU_ROOT/$APP" ]]; then
+        # Remove docker link
+        dokku link:delete "$APP" "$CONTAINER_NAME" "$PLUGIN_ALIAS"
     
-    # Unset variables
-    dokku config:unset "$APP" "DB_SCHEME" "DB_USERNAME" "DB_PASSWORD" "DB_PATH"
+        # Unset variables
+        dokku config:unset "$APP" "DB_SCHEME" "DB_USERNAME" "DB_PASSWORD" "DB_PATH"
+    fi
 
     # Remove persistent volume
     if [[ -d "$HOST_DIR" ]]; then

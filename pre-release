@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 source "$(dirname $0)/../common/functions"
+dokku_log_info1 "1 - Preparing Postgresql for $APP..."
 # Reset bash mode from importing the functions
 set +exo pipefail
+dokku_log_info1 "2 - Preparing Postgresql for $APP..."
 
 source "$(dirname $0)/defaults"
 

@@ -140,7 +140,7 @@ case "$1" in
         dokku link:delete "$APP" "$CONTAINER_NAME" "$PLUGIN_ALIAS"
     
         # Unset variables
-        dokku config:unset "$APP" "DB_SCHEME" "DB_USERNAME" "DB_PASSWORD" "DB_PATH"
+        dokku config:unset-norestart "$APP" "DB_SCHEME" "DB_USERNAME" "DB_PASSWORD" "DB_PATH"
     fi
 
     # Remove persistent volume
@@ -174,12 +174,10 @@ case "$1" in
         dokku_log_warn "Postgresql is not correctly initialized"
         exit 0
     fi
-    #ID=$(docker ps -a | grep "$CONTAINER_NAME" |  awk '{print $1}')
-    #IP=$(docker inspect $ID | grep IPAddress | awk '{ print $2 }' | tr -d ',"')
     DB_PASSWORD=$(cat "$HOST_DIR/pwd")
 
     dokku link:create "$APP" "$CONTAINER_NAME" "$PLUGIN_ALIAS"
-    dokku config:set $APP "DB_SCHEME=postgresql" "DB_USERNAME=root" "DB_PASSWORD=$DB_PASSWORD" "DB_PATH=/db"
+    dokku config:set-norestart $APP "DB_SCHEME=postgresql" "DB_USERNAME=root" "DB_PASSWORD=$DB_PASSWORD" "DB_PATH=/db"
     dokku_log_info1 "$APP linked to $CONTAINER_NAME container"
     ;;
 

@@ -2,7 +2,8 @@
 # Runs a command to ensure that an app's
 # postgres installation is removed
 
-set -eo pipefail; [[ $DOKKU_TRACE ]] && set -x
+set -o pipefail; [[ $DOKKU_TRACE ]] && set -x
+set +e
 
 APP="$1";
 

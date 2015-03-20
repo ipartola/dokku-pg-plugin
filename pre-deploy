@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 source "$(dirname $0)/../common/functions"
 # Reset bash mode from importing the functions
-set -eo pipefail; [[ $DOKKU_TRACE ]] && set -x
+set -o pipefail; [[ $DOKKU_TRACE ]] && set -x
+set +e
 
 source "$(dirname $0)/defaults"
 

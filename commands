@@ -22,6 +22,27 @@ if [[ $1 == postgresql ]] || [[ $1 == postgresql:* ]]; then
     HOST_DIR="$DOKKU_ROOT/.$PLUGIN_NAME/$APP"
 fi
 
+function generate_config() {
+    if [[ -z $1 ]]; then
+        dokku_log_fail "You must specify a container name"
+    fi
+    if [[ ! -f "$HOST_DIR/pwd" ]]; then
+        dokku_log_warn "Postgresql is not correctly initialized"
+        exit 0
+    fi
+    DB_PASSWORD=$(cat "$HOST_DIR/pwd")
+
+    ID=$(docker ps -a | grep "$CONTAINER_NAME" |  awk '{print $1}')
+    IP=$(docker inspect $ID | grep '"IPAddress"' | awk '{ print $2 }' | tr -d ',"')
+    echo "DB_SCHEME=postgresql"
+    echo "DB_USERNAME=root"
+    echo "DB_PASSWORD=$DB_PASSWORD"
+    echo "DB_PATH=db"
+    echo "DB_PORT=$DB_PORT"
+    echo "DB_HOST=$IP"
+    echo "DATABASE_URL=postgresql://root:$DB_PASSWORD@$IP:$DB_PORT/db"
+}
+
 case "$1" in
 
   postgresql)
@@ -153,7 +174,7 @@ case "$1" in
 
   postgresql:info)
     ID=$(docker ps -a | grep "$CONTAINER_NAME" |  awk '{print $1}')
-    IP=$(docker inspect $ID | grep IPAddress | awk '{ print $2 }' | tr -d ',"')
+    IP=$(docker inspect $ID | grep '"IPAddress"' | awk '{ print $2 }' | tr -d ',"')
     DOCKER_GATEWAY=$(docker inspect $ID | grep Gateway | awk '{ print $2 }' | tr -d ',"')
     dokku_log_info2 "Postgresql info:"
     dokku_log_verbose "Application: $APP"
@@ -165,20 +186,23 @@ case "$1" in
 
   postgresql:link)
     verify_app_name "$APP"
-    # Check argument
-    if [[ -z $3 ]]; then
-        dokku_log_fail "You must specify a container name"
-    fi
-    CONTAINER_NAME="${PLUGIN_NAME}-$3"
-    if [[ ! -f "$HOST_DIR/pwd" ]]; then
-        dokku_log_warn "Postgresql is not correctly initialized"
-        exit 0
-    fi
-    DB_PASSWORD=$(cat "$HOST_DIR/pwd")
-
+    CONFIG=`generate_config $3 | tr '\n' ' '`
     dokku link:create "$APP" "$CONTAINER_NAME" "$PLUGIN_ALIAS"
-    dokku config:set $APP "DB_SCHEME=postgresql" "DB_USERNAME=root" "DB_PASSWORD=$DB_PASSWORD" "DB_PATH=/db"
+    dokku config:set $APP $CONFIG
     dokku_log_info1 "$APP linked to $CONTAINER_NAME container"
+    ;;
+
+  postgresql:config)
+    verify_app_name "$APP"
+    generate_config "$2" | tr '\n' ' '
+    echo ""
+    ;;
+  
+  postgresql:dump_sql)
+    verify_app_name "$APP"
+    ID=$(docker ps -a | grep "$CONTAINER_NAME" |  awk '{print $2}')
+    eval `generate_config "$APP"`
+    docker run -e "PGPASSWORD=$DB_PASSWORD" "$ID" /usr/bin/pg_dump --host=$DB_HOST --port=$DB_PORT --user=$DB_USERNAME $DB_PATH
     ;;
 
   postgresql:logs)
@@ -201,6 +225,8 @@ case "$1" in
     postgresql:info <app>                           Display <app> PostgreSQL container informations
     postgresql:link <app> <pgsql>                   Link an app to a PostgreSQL container
     postgresql:logs <app> [-t]                      Display last logs from <app> PostgreSQL container (-t follow)
+    postgresql:config <app>                         Display database env variables
+    postgresql:dump_sql <app>                       Output backup SQL from database to stdout
 EOF
     ;;
 
